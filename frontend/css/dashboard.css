@@ -312,7 +312,28 @@ header h1 { font-size:1.1rem; color:var(--accent); }
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
   gap:12px;
+  max-height:calc(100vh - 260px);
+  overflow-y:auto;
+  scroll-behavior:smooth;
+  padding-right:4px;
 }
+.snmp-device {
+  background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px;
+  min-width:0;
+}
+.snmp-device.online { border-color:rgba(34,197,94,0.4); }
+.snmp-device.critical { border-color:rgba(245,158,11,0.65); }
+.snmp-device.offline { border-color:rgba(239,68,68,0.65); }
+.snmp-device-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.snmp-device h3 { color:#e2e8f0; font-size:0.95rem; }
+.snmp-device-host { color:var(--muted); font:0.72rem 'Consolas',monospace; margin-top:3px; }
+.snmp-summary { color:var(--muted); font-size:0.78rem; margin:14px 0 10px; }
+.snmp-detail-btn { width:100%; }
+.snmp-device-detail { display:none; margin-top:12px; }
+.snmp-device-detail.open { display:block; }
+.status-pill.online { background:rgba(34,197,94,0.15); color:var(--good); }
+.status-pill.critical { background:rgba(245,158,11,0.15); color:var(--warn); }
+.status-pill.offline { background:rgba(239,68,68,0.15); color:var(--bad); }
 .snmp-card {
   background:var(--panel); border:1px solid var(--border);
   border-radius:12px; padding:14px;

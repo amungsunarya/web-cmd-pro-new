@@ -58,6 +58,7 @@ window.SNMP = (() => {
       await loadProfiles();
       $('snmpProfile').value = String(data.profile.id);
       $('snmpDeleteBtn').disabled = false;
+      startTargets([data.profile]);
     } catch (e) {
       alert(e.message);
     }
@@ -107,18 +108,46 @@ window.SNMP = (() => {
       const targetName = msg.target?.name || msg.target?.host;
       const error = `<div class="empty-state"><div class="big">❌</div><div>${Utils.escapeHtml(msg.msg)}</div></div>`;
       if (targetName) {
-        deviceViews.set(String(msg.target.id), { title: targetName, html: error });
+        const key = String(msg.target.id);
+        const previous = deviceViews.get(key);
+        deviceViews.set(key, {
+          title: targetName, host: msg.target.host, html: error, status: 'offline',
+          detailOpen: previous?.detailOpen || false,
+        });
         renderDevices();
+        if (previous?.status !== 'offline') Utils.notify(`${targetName} offline`, 'error');
       } else $('snmpContent').innerHTML = error;
     }
   }
 
+  function statusFor(data) {
+    const critical = (data.cpu != null && data.cpu > 80)
+      || (data.storage || []).some(item => item.percent > 90)
+      || (data.interfaces || []).some(item => item.operStatus != null && item.operStatus !== 1);
+    return critical ? 'critical' : 'online';
+  }
+
+  function statusLabel(status) {
+    return status === 'critical' ? 'CRITICAL' : status === 'offline' ? 'OFFLINE' : status === 'online' ? 'ONLINE' : 'WAIT';
+  }
+
   function renderDevices() {
-    $('snmpContent').innerHTML = Array.from(deviceViews.values()).map((view) => `
-      <div class="snmp-device">
-        <h3>${Utils.escapeHtml(view.title)}</h3>
-        ${view.html}
+    $('snmpContent').innerHTML = Array.from(deviceViews.entries()).map(([id, view]) => `
+      <div class="snmp-device ${view.status || 'wait'}">
+        <div class="snmp-device-head">
+          <div><h3>${Utils.escapeHtml(view.title)}</h3><div class="snmp-device-host">${Utils.escapeHtml(view.host || '')}</div></div>
+          <div class="status-pill ${view.status || 'wait'}"><span class="led"></span>${statusLabel(view.status || 'wait')}</div>
+        </div>
+        <div class="snmp-summary">${view.summary || 'Menunggu hasil polling...'}</div>
+        <button class="btn btn-gray btn-sm snmp-detail-btn" data-device-detail="${Utils.escapeHtml(id)}">${view.detailOpen ? 'Sembunyikan' : 'Detail'}</button>
+        <div class="snmp-device-detail ${view.detailOpen ? 'open' : ''}">${view.html || ''}</div>
       </div>`).join('');
+    $('snmpContent').querySelectorAll('[data-device-detail]').forEach((button) => {
+      button.onclick = () => {
+        const view = deviceViews.get(button.dataset.deviceDetail);
+        if (view) { view.detailOpen = !view.detailOpen; renderDevices(); }
+      };
+    });
   }
 
   function render(data, target = null) {
@@ -205,7 +234,13 @@ window.SNMP = (() => {
     }
 
     if (target) {
-      deviceViews.set(String(target.id), { title: `${target.name} (${target.host})`, html });
+      const key = String(target.id);
+      const previous = deviceViews.get(key);
+      deviceViews.set(key, {
+        title: target.name, host: target.host, html, status: statusFor(data),
+        summary: `${data.interfaces?.length || 0} interface, CPU ${data.cpu == null ? '—' : `${data.cpu}%`}, ${data.storage?.length || 0} storage`,
+        detailOpen: previous?.detailOpen || false,
+      });
       renderDevices();
     } else {
       $('snmpContent').innerHTML = html;
@@ -234,7 +269,11 @@ window.SNMP = (() => {
     $('snmpAllBtn').disabled = true;
     $('snmpStopBtn').disabled = false;
     deviceViews.clear();
-    $('snmpContent').innerHTML = '<div class="empty-state"><div class="big">⏳</div><div>Polling SNMP...</div></div>';
+    targets.forEach((target, index) => deviceViews.set(String(target.id || index), {
+      title: target.name || target.host, host: target.host, status: 'wait', detailOpen: false,
+      html: '<div class="empty-state"><div class="big">⏳</div><div>Menunggu hasil polling...</div></div>',
+    }));
+    renderDevices();
     ws.send(JSON.stringify({
       type: 'start',
       targets,

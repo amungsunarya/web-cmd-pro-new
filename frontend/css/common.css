@@ -91,3 +91,15 @@ input:focus, textarea:focus { border-color:var(--accent); }
 
 /* ===== Utility ===== */
 .hidden { display:none !important; }
+
+.app-toast {
+  position:fixed; right:18px; bottom:18px; z-index:200;
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+.toast {
+  padding:11px 14px; border:1px solid var(--border); border-radius:8px;
+  background:#172033; color:var(--text); box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  font-size:0.82rem; animation:toast-in 0.2s ease-out;
+}
+.toast-error { border-color:rgba(248,113,113,0.7); color:#fecaca; }
+@keyframes toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
