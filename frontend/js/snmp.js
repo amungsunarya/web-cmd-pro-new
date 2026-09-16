@@ -1,6 +1,8 @@
 window.SNMP = (() => {
   const $ = Utils.$;
   let ws = null, running = false;
+  let profiles = [];
+  const deviceViews = new Map();
 
   function profileValues() {
     return {
@@ -17,6 +19,7 @@ window.SNMP = (() => {
     try {
       const res = await fetch('/api/snmp/profiles');
       const data = await res.json();
+      profiles = data.profiles || [];
       const select = $('snmpProfile');
       select.innerHTML = '<option value="">— profil tersimpan —</option>';
       for (const profile of data.profiles || []) {
@@ -98,15 +101,27 @@ window.SNMP = (() => {
   }
 
   function handleMessage(msg) {
-    if (msg.type === 'snmp') render(msg.data);
+    if (msg.type === 'snmp') render(msg.data, msg.target);
     else if (msg.type === 'info') console.log(msg.msg);
     else if (msg.type === 'error') {
-      const el = $('snmpContent');
-      el.innerHTML = `<div class="empty-state"><div class="big">❌</div><div>${Utils.escapeHtml(msg.msg)}</div></div>`;
+      const targetName = msg.target?.name || msg.target?.host;
+      const error = `<div class="empty-state"><div class="big">❌</div><div>${Utils.escapeHtml(msg.msg)}</div></div>`;
+      if (targetName) {
+        deviceViews.set(String(msg.target.id), { title: targetName, html: error });
+        renderDevices();
+      } else $('snmpContent').innerHTML = error;
     }
   }
 
-  function render(data) {
+  function renderDevices() {
+    $('snmpContent').innerHTML = Array.from(deviceViews.values()).map((view) => `
+      <div class="snmp-device">
+        <h3>${Utils.escapeHtml(view.title)}</h3>
+        ${view.html}
+      </div>`).join('');
+  }
+
+  function render(data, target = null) {
     const sys = data.system || {};
     const ifaces = data.interfaces || [];
     const storage = data.storage || [];
@@ -189,34 +204,47 @@ window.SNMP = (() => {
         </div>`;
     }
 
-    $('snmpContent').innerHTML = html;
+    if (target) {
+      deviceViews.set(String(target.id), { title: `${target.name} (${target.host})`, html });
+      renderDevices();
+    } else {
+      $('snmpContent').innerHTML = html;
+    }
   }
 
   function start() {
-    const host = $('snmpHost').value.trim();
-    if (!host) { alert('Masukkan IP device'); return; }
+    const values = profileValues();
+    if (!values.host) { alert('Masukkan IP device'); return; }
+    startTargets([values]);
+  }
+
+  function startAll() {
+    if (!profiles.length) { alert('Simpan minimal satu perangkat SNMP terlebih dahulu'); return; }
+    startTargets(profiles);
+  }
+
+  function startTargets(targets) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       initWs();
-      setTimeout(() => start(), 500);
+      setTimeout(() => startTargets(targets), 500);
       return;
     }
     running = true;
     $('snmpStartBtn').disabled = true;
+    $('snmpAllBtn').disabled = true;
     $('snmpStopBtn').disabled = false;
+    deviceViews.clear();
     $('snmpContent').innerHTML = '<div class="empty-state"><div class="big">⏳</div><div>Polling SNMP...</div></div>';
     ws.send(JSON.stringify({
       type: 'start',
-      host,
-      community: $('snmpCommunity').value || 'public',
-      port: parseInt($('snmpPort').value) || 161,
-      version: $('snmpVersion').value,
-      interval: parseInt($('snmpInterval').value) || 5000,
+      targets,
     }));
   }
 
   function stop() {
     running = false;
     $('snmpStartBtn').disabled = false;
+    $('snmpAllBtn').disabled = false;
     $('snmpStopBtn').disabled = true;
     if (ws) ws.send(JSON.stringify({ type: 'stop' }));
   }
@@ -224,6 +252,7 @@ window.SNMP = (() => {
   function bindUI() {
     const startBtn = $('snmpStartBtn');
     const stopBtn  = $('snmpStopBtn');
+    const allBtn = $('snmpAllBtn');
     $('snmpProfile').onchange = (event) => {
       const option = event.target.selectedOptions[0];
       if (option?.dataset.profile) applyProfile(JSON.parse(option.dataset.profile));
@@ -231,6 +260,7 @@ window.SNMP = (() => {
     };
     $('snmpSaveBtn').onclick = saveProfile;
     $('snmpDeleteBtn').onclick = deleteProfile;
+    allBtn.onclick = startAll;
 
     if (startBtn) {
       startBtn.onclick = start;

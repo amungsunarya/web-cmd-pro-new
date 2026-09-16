@@ -173,15 +173,14 @@ async function pollPrinter(session) {
 // Handler WebSocket
 // =========================================
 module.exports = function snmpHandler(ws) {
-  let session = null;
   let timer = null;
-  let config = null;
-  let prevIfaces = null;
+  let targets = [];
+  const sessions = new Map();
+  const prevIfaces = new Map();
 
   const send = (o) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(o)); };
 
-  async function poll() {
-    if (!session) return;
+  async function pollTarget(target, session) {
     try {
       const system = await pollSystem(session);
       const interfaces = await pollInterfaces(session);
@@ -192,10 +191,11 @@ module.exports = function snmpHandler(ws) {
       // Hitung bitrate dari delta counter
       const now = Date.now();
       let ifaceRates = null;
-      if (prevIfaces && prevIfaces.time) {
-        const dt = (now - prevIfaces.time) / 1000;
+      const previous = prevIfaces.get(target.key);
+      if (previous && previous.time) {
+        const dt = (now - previous.time) / 1000;
         const prevMap = {};
-        for (const i of prevIfaces.list) prevMap[i.index] = i;
+        for (const i of previous.list) prevMap[i.index] = i;
 
         ifaceRates = interfaces.map(i => {
           const p = prevMap[i.index];
@@ -208,11 +208,12 @@ module.exports = function snmpHandler(ws) {
         });
       }
 
-      prevIfaces = { time: now, list: interfaces };
+      prevIfaces.set(target.key, { time: now, list: interfaces });
 
       send({
         type: 'snmp',
         time: now,
+        target: { id: target.id, name: target.name, host: target.host },
         data: {
           system,
           interfaces: ifaceRates || interfaces,
@@ -222,49 +223,68 @@ module.exports = function snmpHandler(ws) {
         }
       });
     } catch (e) {
-      send({ type: 'error', msg: 'SNMP error: ' + e.message });
+      send({ type: 'error', target: { id: target.id, name: target.name, host: target.host }, msg: 'SNMP error: ' + e.message });
     }
+  }
+
+  function stopAll() {
+    if (timer) { clearInterval(timer); timer = null; }
+    for (const session of sessions.values()) {
+      try { session.close(); } catch {}
+    }
+    sessions.clear();
+    prevIfaces.clear();
+    targets = [];
   }
 
   ws.on('message', (msg) => {
     let data; try { data = JSON.parse(msg); } catch { return; }
 
     if (data.type === 'start') {
-      if (timer) { clearInterval(timer); timer = null; }
-      if (session) { try { session.close(); } catch {} session = null; }
+      stopAll();
+      const requestedTargets = Array.isArray(data.targets) ? data.targets : [data];
+      targets = requestedTargets.slice(0, 20).filter((target) =>
+        target?.host && /^[a-zA-Z0-9._\-]+$/.test(target.host)
+      ).map((target, index) => ({
+        ...target,
+        id: target.id || index,
+        key: String(target.id || `${target.host}:${target.port || 161}`),
+        port: parseInt(target.port) || 161,
+        version: target.version === '1' ? '1' : '2c',
+        interval: Math.max(2000, parseInt(target.interval) || 5000),
+        community: target.community || 'public',
+        name: target.name || target.host,
+      }));
 
-      const { host, community = 'public', port = 161, version = '2c', interval = 5000 } = data;
+      if (!targets.length) return send({ type: 'error', msg: 'Tidak ada host SNMP yang valid' });
 
-      if (!host || !/^[a-zA-Z0-9._\-]+$/.test(host)) {
-        return send({ type: 'error', msg: 'Host tidak valid' });
+      for (const target of targets) {
+        const session = snmp.createSession(target.host, target.community, {
+          port: target.port,
+          version: target.version === '1' ? snmp.Version1 : snmp.Version2c,
+          timeout: 5000,
+          retries: 1,
+        });
+        sessions.set(target.key, session);
+        session.on('error', (e) => send({
+          type: 'error', target: { id: target.id, name: target.name, host: target.host },
+          msg: 'SNMP session error: ' + e.message,
+        }));
       }
 
-      config = { host, community, port, version, interval };
-      prevIfaces = null;
-
-      session = snmp.createSession(host, community, {
-        port: parseInt(port),
-        version: version === '1' ? snmp.Version1 : snmp.Version2c,
-        timeout: 5000,
-        retries: 1,
-      });
-
-      session.on('error', (e) => send({ type: 'error', msg: 'SNMP session error: ' + e.message }));
-
-      send({ type: 'info', msg: `Mulai SNMP polling ${host} (v${version}, ${community}, setiap ${interval}ms)` });
-
-      poll();
-      timer = setInterval(poll, Math.max(2000, parseInt(interval)));
+      send({ type: 'info', msg: `Mulai monitoring ${targets.length} perangkat SNMP` });
+      const pollAll = () => Promise.all(targets.map((target) => pollTarget(target, sessions.get(target.key))));
+      pollAll();
+      const interval = Math.min(...targets.map((target) => target.interval));
+      timer = setInterval(pollAll, interval);
     }
     else if (data.type === 'stop') {
-      if (timer) { clearInterval(timer); timer = null; }
-      if (session) { try { session.close(); } catch {} session = null; }
+      stopAll();
       send({ type: 'info', msg: 'SNMP polling dihentikan' });
     }
   });
 
   ws.on('close', () => {
-    if (timer) { clearInterval(timer); timer = null; }
-    if (session) { try { session.close(); } catch {} session = null; }
+    stopAll();
   });
 };
