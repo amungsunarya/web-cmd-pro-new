@@ -211,6 +211,31 @@
         <option value="1000" selected>1 detik</option>
       </select>
     </div>
+      <!-- ============ SNMP ============ -->
+  <div class="view" id="view-snmp">
+    <div class="net-bar">
+      <input class="grow" type="text" id="snmpHost" placeholder="IP router/switch/AP/printer" value="192.168.1.1">
+      <input class="port" type="text" id="snmpCommunity" value="public" placeholder="Community">
+      <input class="port" type="number" id="snmpPort" value="161">
+      <select id="snmpVersion" class="btn btn-gray">
+        <option value="2c" selected>v2c</option>
+        <option value="1">v1</option>
+      </select>
+      <input class="port" type="number" id="snmpInterval" value="5000" title="Interval (ms)">
+      <button class="btn btn-primary" id="snmpStartBtn">▶ Poll</button>
+      <button class="btn btn-danger" id="snmpStopBtn" disabled>■ Stop</button>
+    </div>
+
+    <div id="snmpContent" class="snmp-content">
+      <div class="empty-state">
+        <div class="big">🌐</div>
+        <div>Masukkan IP device untuk mulai SNMP polling.</div>
+        <div style="margin-top:6px;font-size:0.8rem;color:var(--muted)">
+          Support: Router, Switch, Server, Access Point, Printer
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Custom CMD -->
