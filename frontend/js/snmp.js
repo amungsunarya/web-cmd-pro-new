@@ -2,6 +2,73 @@ window.SNMP = (() => {
   const $ = Utils.$;
   let ws = null, running = false;
 
+  function profileValues() {
+    return {
+      name: $('snmpProfileName').value.trim(),
+      host: $('snmpHost').value.trim(),
+      community: $('snmpCommunity').value.trim() || 'public',
+      port: parseInt($('snmpPort').value) || 161,
+      version: $('snmpVersion').value,
+      interval: parseInt($('snmpInterval').value) || 5000,
+    };
+  }
+
+  async function loadProfiles() {
+    try {
+      const res = await fetch('/api/snmp/profiles');
+      const data = await res.json();
+      const select = $('snmpProfile');
+      select.innerHTML = '<option value="">— profil tersimpan —</option>';
+      for (const profile of data.profiles || []) {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = `${profile.name} — ${profile.host}`;
+        option.dataset.profile = JSON.stringify(profile);
+        select.appendChild(option);
+      }
+    } catch (e) {
+      console.error('Gagal memuat profil SNMP:', e);
+    }
+  }
+
+  function applyProfile(profile) {
+    $('snmpProfileName').value = profile.name || '';
+    $('snmpHost').value = profile.host || '';
+    $('snmpCommunity').value = profile.community || 'public';
+    $('snmpPort').value = profile.port || 161;
+    $('snmpVersion').value = profile.version || '2c';
+    $('snmpInterval').value = profile.interval || 5000;
+    $('snmpDeleteBtn').disabled = !profile.id;
+  }
+
+  async function saveProfile() {
+    const values = profileValues();
+    if (!values.name) { alert('Masukkan nama profil'); return; }
+    try {
+      const res = await fetch('/api/snmp/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan profil');
+      await loadProfiles();
+      $('snmpProfile').value = String(data.profile.id);
+      $('snmpDeleteBtn').disabled = false;
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  async function deleteProfile() {
+    const id = $('snmpProfile').value;
+    if (!id || !confirm('Hapus profil SNMP ini?')) return;
+    const res = await fetch(`/api/snmp/profiles/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const data = await res.json(); alert(data.error || 'Gagal menghapus profil'); return; }
+    applyProfile({});
+    await loadProfiles();
+  }
+
   function fmtBytes(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -157,6 +224,13 @@ window.SNMP = (() => {
   function bindUI() {
     const startBtn = $('snmpStartBtn');
     const stopBtn  = $('snmpStopBtn');
+    $('snmpProfile').onchange = (event) => {
+      const option = event.target.selectedOptions[0];
+      if (option?.dataset.profile) applyProfile(JSON.parse(option.dataset.profile));
+      else applyProfile({});
+    };
+    $('snmpSaveBtn').onclick = saveProfile;
+    $('snmpDeleteBtn').onclick = deleteProfile;
 
     if (startBtn) {
       startBtn.onclick = start;
@@ -175,6 +249,7 @@ window.SNMP = (() => {
     init() {
       initWs();
       bindUI();
+      loadProfiles();
     }
   };
 })();

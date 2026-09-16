@@ -218,6 +218,10 @@
   <!-- ============ SNMP ============ -->
   <div class="view" id="view-snmp">
     <div class="net-bar">
+      <select class="grow" id="snmpProfile">
+        <option value="">— profil tersimpan —</option>
+      </select>
+      <input class="port" type="text" id="snmpProfileName" placeholder="Nama profil">
       <input class="grow" type="text" id="snmpHost" placeholder="IP router/switch/AP/printer" value="192.168.1.1">
       <input class="port" type="text" id="snmpCommunity" value="public" placeholder="Community">
       <input class="port" type="number" id="snmpPort" value="161">
@@ -226,6 +230,8 @@
         <option value="1">v1</option>
       </select>
       <input class="port" type="number" id="snmpInterval" value="5000" title="Interval (ms)">
+      <button class="btn btn-gray" id="snmpSaveBtn">💾 Simpan</button>
+      <button class="btn btn-gray" id="snmpDeleteBtn" disabled>🗑 Hapus</button>
       <button class="btn btn-primary" id="snmpStartBtn">▶ Poll</button>
       <button class="btn btn-danger" id="snmpStopBtn" disabled>■ Stop</button>
     </div>

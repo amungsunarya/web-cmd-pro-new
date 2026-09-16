@@ -44,8 +44,23 @@ db.exec(`
     created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
   );
 
+  CREATE TABLE IF NOT EXISTS snmp_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    host TEXT NOT NULL,
+    community TEXT NOT NULL DEFAULT 'public',
+    port INTEGER NOT NULL DEFAULT 161,
+    version TEXT NOT NULL DEFAULT '2c' CHECK (version IN ('1','2c')),
+    interval INTEGER NOT NULL DEFAULT 5000,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
   CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
   CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_snmp_profiles_user ON snmp_profiles(user_id);
 `);
 
 const BCRYPT_ROUNDS = 10;
@@ -138,6 +153,27 @@ const listAudit = (limit = 100) =>
   db.prepare('SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?').all(limit);
 
 // =========================================
+// SNMP PROFILES
+// =========================================
+const listSnmpProfiles = (userId) => db.prepare(
+  'SELECT id, name, host, community, port, version, interval FROM snmp_profiles WHERE user_id = ? ORDER BY name COLLATE NOCASE'
+).all(userId);
+
+function createSnmpProfile({ userId, name, host, community = 'public', port = 161, version = '2c', interval = 5000 }) {
+  const info = db.prepare(`
+    INSERT INTO snmp_profiles (user_id, name, host, community, port, version, interval, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
+  `).run(userId, name, host, community, port, version, interval);
+  return db.prepare(
+    'SELECT id, name, host, community, port, version, interval FROM snmp_profiles WHERE id = ?'
+  ).get(info.lastInsertRowid);
+}
+
+const deleteSnmpProfile = (userId, profileId) => db.prepare(
+  'DELETE FROM snmp_profiles WHERE id = ? AND user_id = ?'
+).run(profileId, userId);
+
+// =========================================
 // CLI
 // =========================================
 function resetAdminPassword(newPass) {
@@ -156,4 +192,5 @@ module.exports = {
   updatePassword, touchLastLogin, listUsers, deleteUser,
   createSession, getSession, deleteSession, cleanExpiredSessions,
   logAction, listAudit, resetAdminPassword,
+  listSnmpProfiles, createSnmpProfile, deleteSnmpProfile,
 };
