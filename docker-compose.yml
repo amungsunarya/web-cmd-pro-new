@@ -1,7 +1,7 @@
 services:
   web-cmd-pro:
     build: .
-    image: web-cmd-pro:1.4.0
+    image: web-cmd-pro:1.5.0
     container_name: web-cmd-pro-new
     network_mode: host
     cap_add:
@@ -9,7 +9,7 @@ services:
       - NET_ADMIN
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3001
       - TZ=Asia/Jakarta
       - SESSION_HOURS=8
       - DB_PATH=/app/data/app.db
