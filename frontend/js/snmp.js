@@ -122,8 +122,7 @@ window.SNMP = (() => {
 
   function statusFor(data) {
     const critical = (data.cpu != null && data.cpu > 80)
-      || (data.storage || []).some(item => item.percent > 90)
-      || (data.interfaces || []).some(item => item.operStatus != null && item.operStatus !== 1);
+      || (data.storage || []).some(item => item.percent > 90);
     return critical ? 'critical' : 'online';
   }
 
