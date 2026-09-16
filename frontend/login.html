@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Login — Web CMD Pro</title>
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+
+<div class="login-card">
+  <div class="logo">
+    <div class="icon">🖥️</div>
+    <h1>Web CMD Pro</h1>
+    <p id="subtitle">Masuk untuk melanjutkan</p>
+  </div>
+
+  <div class="alert" id="alertBox"></div>
+
+  <!-- SETUP FORM -->
+  <form id="setupForm" class="hidden" autocomplete="off">
+    <div class="alert info show">🔧 Setup awal — buat akun admin pertama</div>
+    <div class="field">
+      <label>Username Admin</label>
+      <input type="text" id="suUser" placeholder="admin" required>
+    </div>
+    <div class="field">
+      <label>Password (min 6 karakter)</label>
+      <input type="password" id="suPass" required>
+    </div>
+    <div class="field">
+      <label>Konfirmasi Password</label>
+      <input type="password" id="suConfirm" required>
+    </div>
+    <button type="submit" class="btn-primary" id="setupBtn">🚀 Buat Admin</button>
+  </form>
+
+  <!-- LOGIN FORM -->
+  <form id="loginForm" class="hidden" autocomplete="off">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="admin" required>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" required>
+        <button type="button" class="pw-toggle" id="pwToggle">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn-primary" id="loginBtn">🔓 Masuk</button>
+  </form>
+
+  <div class="footer">
+    <span class="dot">●</span> Server online — <span class="warn" id="modeLabel">memuat...</span>
+  </div>
+</div>
+
+<script src="/js/login.js"></script>
+
+</body>
+</html>

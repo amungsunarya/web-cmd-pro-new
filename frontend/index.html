@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Web CMD Pro</title>
+
+<!-- CSS modular -->
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+<header>
+  <h1>🖥️ Web CMD Pro</h1>
+  <div class="tabs">
+    <button class="tab active" data-view="ping">📡 Ping Monitor</button>
+    <button class="tab" data-view="ssh">🔐 SSH</button>
+    <button class="tab" data-view="telnet">💻 Telnet</button>
+    <button class="tab" data-view="cmd">🛠️ CMD Tools</button>
+    <button class="tab" data-view="bandwidth">🚀 Bandwidth</button>
+    <button class="tab" data-view="traffic">📊 Traffic</button>
+    <button class="tab" data-view="snmp">🌐 SNMP</button>
+  </div>
+  <div class="header-right">
+    <span class="user-badge" title="Login sebagai">
+      <span>👤</span>
+      <span id="userName">...</span>
+      <span class="role-badge" id="roleBadge"></span>
+    </span>
+    <button class="btn-pass" id="changePassBtn">🔑 Ganti Password</button>
+    <button class="btn-logout" id="logoutBtn">🚪 Logout</button>
+  </div>
+  <div class="platform-info" id="platformInfo">memuat...</div>
+</header>
+
+<div class="content">
+
+  <!-- PING MONITOR -->
+  <div class="view active" id="view-ping">
+    <div class="ping-toolbar">
+      <input type="text" id="pingHost" placeholder="IP/hostname perangkat">
+      <input type="text" id="pingName" placeholder="Nama (opsional)">
+      <button class="btn btn-primary" id="addDeviceBtn">➕ Tambah & Ping</button>
+      <button class="btn btn-gray btn-sm" id="addDefaultsBtn">⚡ Cepat</button>
+    </div>
+    <div class="device-grid" id="deviceGrid"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="big">📡</div>
+      <div>Belum ada perangkat yang dipantau.</div>
+    </div>
+  </div>
+
+  <!-- SSH -->
+  <div class="view" id="view-ssh">
+    <div class="ssh-layout">
+      <aside class="ssh-form">
+        <label>Host / IP</label>
+        <input type="text" id="sshHost" placeholder="192.168.1.1" value="192.168.1.1">
+        <div class="row">
+          <div>
+            <label>Port</label>
+            <input type="number" id="sshPort" value="22">
+          </div>
+          <div>
+            <label>Username</label>
+            <input type="text" id="sshUser" placeholder="admin" value="admin">
+          </div>
+        </div>
+        <label>Metode Autentikasi</label>
+        <div class="key-type">
+          <button class="active" data-auth="password">🔑 Password</button>
+          <button data-auth="key">📄 Private Key</button>
+        </div>
+        <div id="authPasswordBlock">
+          <label>Password</label>
+          <input type="password" id="sshPassword" placeholder="••••••••">
+        </div>
+        <div id="authKeyBlock" style="display:none;">
+          <label>Private Key (PEM/OpenSSH)</label>
+          <textarea id="sshPrivateKey" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+          <label>Passphrase (opsional)</label>
+          <input type="password" id="sshPassphrase">
+        </div>
+        <label class="save-toggle">
+          <input type="checkbox" id="sshSave"> Simpan konfigurasi
+        </label>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button class="btn btn-primary" id="sshConnectBtn" style="flex:1;">🔌 Connect</button>
+          <button class="btn btn-danger" id="sshDisconnectBtn" disabled>⛔</button>
+          <button class="btn btn-gray" id="sshClearBtn">🗑</button>
+        </div>
+      </aside>
+
+      <div class="term">
+        <div class="term-head">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span style="color:var(--muted); margin-left:6px;" id="sshStatus">Belum terhubung</span>
+        </div>
+        <div class="term-body" id="sshBody"></div>
+        <div class="term-input">
+          <input type="text" id="sshInput" placeholder="Ketik perintah lalu Enter..." disabled>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELNET -->
+  <div class="view" id="view-telnet">
+    <div class="net-bar">
+      <input class="grow" type="text" id="telnetHost" placeholder="IP/hostname" value="192.168.1.1">
+      <input class="port" type="number" id="telnetPort" value="23">
+      <button class="btn btn-primary" id="telnetConnectBtn">🔌 Connect</button>
+      <button class="btn btn-danger" id="telnetDisconnectBtn" disabled>⛔ Disconnect</button>
+      <button class="btn btn-gray" id="telnetClearBtn">🗑 Clear</button>
+    </div>
+    <div class="term">
+      <div class="term-head">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span style="color:var(--muted); margin-left:6px;" id="telnetStatus">Belum terhubung</span>
+      </div>
+      <div class="term-body" id="telnetBody"></div>
+      <div class="term-input">
+        <input type="text" id="telnetInput" placeholder="Ketik perintah lalu Enter..." disabled>
+      </div>
+    </div>
+  </div>
+
+  <!-- CMD TOOLS -->
+  <div class="view" id="view-cmd">
+    <div class="cmd-layout">
+      <aside class="sidebar" id="cmdSidebar">
+        <div style="color:var(--muted); font-size:0.8rem; padding:6px;">Memuat...</div>
+      </aside>
+      <div class="cmd-main">
+        <div class="cmd-bar">
+          <input type="text" id="cmdTarget" placeholder="Target">
+          <button class="btn btn-primary" id="cmdRunBtn">▶ Jalankan</button>
+          <button class="btn btn-gray btn-sm" id="addCustomBtn">➕ Custom CMD</button>
+          <button class="btn btn-gray btn-sm" id="cmdClearBtn">🗑 Clear</button>
+        </div>
+        <div class="cmd-term" id="cmdTerminal">
+          <div class="line dim">Pilih perintah dari sidebar.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BANDWIDTH ============ -->
+  <div class="view" id="view-bandwidth">
+    <div class="net-bar">
+      <input class="grow" type="text" id="bwHost" placeholder="IP iperf3 server" value="10.88.20.7">
+      <input class="port" type="number" id="bwPort" value="5201" placeholder="Port">
+      <select id="bwProtocol" class="btn btn-gray">
+        <option value="tcp">TCP</option>
+        <option value="udp">UDP</option>
+      </select>
+      <input class="port" type="number" id="bwDuration" value="10" title="Durasi (detik)">
+      <button class="btn btn-primary" id="bwStartBtn">▶ Mulai Tes</button>
+      <button class="btn btn-danger" id="bwStopBtn" disabled>■ Stop</button>
+    </div>
+
+    <div class="bw-panel">
+      <div class="bw-big-stats">
+        <div class="bw-stat">
+          <div class="label">↓ DOWNLOAD</div>
+          <div class="value" id="bwRx">—</div>
+          <div class="unit">Mbps</div>
+        </div>
+        <div class="bw-stat">
+          <div class="label">↑ UPLOAD</div>
+          <div class="value" id="bwTx">—</div>
+          <div class="unit">Mbps</div>
+        </div>
+        <div class="bw-stat">
+          <div class="label">⚠ RETRANSMIT</div>
+          <div class="value" id="bwRetrans">—</div>
+          <div class="unit">paket</div>
+        </div>
+        <div class="bw-stat">
+          <div class="label">💻 CPU</div>
+          <div class="value" id="bwCpu">—</div>
+          <div class="unit">%</div>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span style="color:var(--muted); margin-left:6px;" id="bwStatus">Siap</span>
+        </div>
+        <div class="term-body" id="bwBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TRAFFIC ============ -->
+  <div class="view" id="view-traffic">
+    <div class="net-bar">
+      <select id="trafficIface" class="grow">
+        <option value="">— pilih interface —</option>
+      </select>
+      <select id="trafficInterval" class="btn btn-gray">
+        <option value="500">0.5 detik</option>
+        <option value="1000" selected>1 detik</option>
+      </select>
+    </div>
+</div>
+
+<!-- Modal Custom CMD -->
+<div class="modal-bg" id="customModal">
+  <div class="modal">
+    <h3>➕ Tambah Perintah Custom</h3>
+    <label>Label</label>
+    <input type="text" id="newCmdLabel" placeholder="Ping cepat 10x">
+    <label>Binary</label>
+    <input type="text" id="newCmdBin" placeholder="ping">
+    <div class="hint">Diizinkan: ping, tracert, nslookup, netstat, arp, curl, dll.</div>
+    <label>Argumen (pakai {target} untuk target dinamis)</label>
+    <input type="text" id="newCmdArgs" placeholder="-n 10 {target}">
+    <label>Kategori</label>
+    <input type="text" id="newCmdCat" value="Custom">
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="closeCustomModal()">Batal</button>
+      <button class="btn btn-primary" onclick="saveCustomCmd()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ganti Password -->
+<div class="modal-bg" id="passModal">
+  <div class="modal">
+    <h3>🔑 Ganti Password</h3>
+    <div class="modal-alert" id="passAlert"></div>
+    <label>Password Lama</label>
+    <input type="password" id="passCurrent">
+    <label>Password Baru</label>
+    <input type="password" id="passNew">
+    <label>Konfirmasi</label>
+    <input type="password" id="passConfirm">
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="closePassModal()">Batal</button>
+      <button class="btn btn-primary" id="passSubmitBtn">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript modular — urutan penting! -->
+<script src="/js/utils.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/ping.js"></script>
+<script src="/js/ssh.js"></script>
+<script src="/js/telnet.js"></script>
+<script src="/js/cmd.js"></script>
+<script src="/js/bandwidth.js"></script>
+<script src="/js/traffic.js"></script>
+<script src="/js/snmp.js"></script>
+<script src="/js/app.js"></script>
+
+</body>
+</html>
