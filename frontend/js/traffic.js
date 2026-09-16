@@ -104,8 +104,20 @@ window.Traffic = (() => {
   }
 
   function bindUI() {
-    $('trafficStartBtn').onclick = start;
-    $('trafficStopBtn').onclick = stop;
+    const startBtn = $('trafficStartBtn');
+    const stopBtn  = $('trafficStopBtn');
+
+    if (startBtn) {
+      startBtn.onclick = start;
+    } else {
+      console.warn('⚠️ [traffic] #trafficStartBtn tidak ada di HTML');
+    }
+
+    if (stopBtn) {
+      stopBtn.onclick = stop;
+    } else {
+      console.warn('⚠️ [traffic] #trafficStopBtn tidak ada di HTML');
+    }
   }
 
   return {

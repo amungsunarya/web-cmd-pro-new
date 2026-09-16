@@ -155,8 +155,20 @@ window.SNMP = (() => {
   }
 
   function bindUI() {
-    $('snmpStartBtn').onclick = start;
-    $('snmpStopBtn').onclick = stop;
+    const startBtn = $('snmpStartBtn');
+    const stopBtn  = $('snmpStopBtn');
+
+    if (startBtn) {
+      startBtn.onclick = start;
+    } else {
+      console.warn('⚠️ [snmp] #snmpStartBtn tidak ada di HTML');
+    }
+
+    if (stopBtn) {
+      stopBtn.onclick = stop;
+    } else {
+      console.warn('⚠️ [snmp] #snmpStopBtn tidak ada di HTML');
+    }
   }
 
   return {

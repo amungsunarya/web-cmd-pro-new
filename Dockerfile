@@ -33,10 +33,10 @@ COPY frontend ./frontend
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=3001 \
     DB_PATH=/app/data/app.db
 
-EXPOSE 3000
+EXPOSE 3001
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "backend/server.js"]
