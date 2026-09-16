@@ -42,4 +42,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "backend/server.js"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://127.0.0.1:3000/api/setup-status || exit 1
+  CMD curl -f http://127.0.0.1:3001/api/setup-status || exit 1
