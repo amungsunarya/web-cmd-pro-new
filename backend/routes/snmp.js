@@ -21,7 +21,7 @@ function validateProfile(body = {}) {
 }
 
 router.get('/snmp/profiles', (req, res) => {
-  res.json({ profiles: db.listSnmpProfiles(req.user.id) });
+  res.json({ profiles: db.listSnmpProfiles() });
 });
 
 router.post('/snmp/profiles', (req, res) => {
@@ -34,7 +34,7 @@ router.post('/snmp/profiles', (req, res) => {
 });
 
 router.delete('/snmp/profiles/:id', auth.adminOnly, (req, res) => {
-  const result = db.deleteSnmpProfile(req.user.id, parseInt(req.params.id));
+  const result = db.deleteSnmpProfile(parseInt(req.params.id));
   if (!result.changes) return res.status(404).json({ error: 'Profil tidak ditemukan' });
   res.json({ ok: true });
 });

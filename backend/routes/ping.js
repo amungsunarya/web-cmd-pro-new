@@ -13,7 +13,7 @@ function validateDevice(body = {}) {
 }
 
 router.get('/ping/devices', (req, res) => {
-  res.json({ devices: db.listPingDevices(req.user.id) });
+  res.json({ devices: db.listPingDevices() });
 });
 
 router.post('/ping/devices', (req, res) => {
@@ -26,7 +26,7 @@ router.post('/ping/devices', (req, res) => {
 });
 
 router.delete('/ping/devices/:host', auth.adminOnly, (req, res) => {
-  const result = db.deletePingDevice(req.user.id, req.params.host);
+  const result = db.deletePingDevice(req.params.host);
   if (!result.changes) return res.status(404).json({ error: 'Perangkat tidak ditemukan' });
   res.json({ ok: true });
 });

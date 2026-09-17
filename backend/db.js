@@ -167,9 +167,9 @@ const listAudit = (limit = 100) =>
 // =========================================
 // SNMP PROFILES
 // =========================================
-const listSnmpProfiles = (userId) => db.prepare(
-  'SELECT id, name, host, community, port, version, interval FROM snmp_profiles WHERE user_id = ? ORDER BY name COLLATE NOCASE'
-).all(userId);
+const listSnmpProfiles = () => db.prepare(
+  'SELECT id, name, host, community, port, version, interval FROM snmp_profiles ORDER BY name COLLATE NOCASE'
+).all();
 
 function createSnmpProfile({ userId, name, host, community = 'public', port = 161, version = '2c', interval = 5000 }) {
   const info = db.prepare(`
@@ -181,16 +181,16 @@ function createSnmpProfile({ userId, name, host, community = 'public', port = 16
   ).get(info.lastInsertRowid);
 }
 
-const deleteSnmpProfile = (userId, profileId) => db.prepare(
-  'DELETE FROM snmp_profiles WHERE id = ? AND user_id = ?'
-).run(profileId, userId);
+const deleteSnmpProfile = (profileId) => db.prepare(
+  'DELETE FROM snmp_profiles WHERE id = ?'
+).run(profileId);
 
 // =========================================
 // PING DEVICES
 // =========================================
-const listPingDevices = (userId) => db.prepare(
-  'SELECT id, host, name FROM ping_devices WHERE user_id = ? ORDER BY name COLLATE NOCASE'
-).all(userId);
+const listPingDevices = () => db.prepare(
+  'SELECT id, host, name FROM ping_devices ORDER BY name COLLATE NOCASE'
+).all();
 
 function savePingDevice({ userId, host, name }) {
   const info = db.prepare(`
@@ -203,9 +203,9 @@ function savePingDevice({ userId, host, name }) {
   ).get(userId, host);
 }
 
-const deletePingDevice = (userId, host) => db.prepare(
-  'DELETE FROM ping_devices WHERE user_id = ? AND host = ?'
-).run(userId, host);
+const deletePingDevice = (host) => db.prepare(
+  'DELETE FROM ping_devices WHERE host = ?'
+).run(host);
 
 // =========================================
 // CLI
