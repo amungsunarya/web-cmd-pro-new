@@ -20,7 +20,12 @@ window.Traffic = (() => {
   function handleMessage(msg) {
     if (msg.type === 'traffic') update(msg.data);
     else if (msg.type === 'info') console.log(msg.msg);
-    else if (msg.type === 'error') console.error(msg.msg);
+    else if (msg.type === 'error') {
+      running = false;
+      $('trafficStartBtn').disabled = false;
+      $('trafficStopBtn').disabled = true;
+      $('trafficGrid').innerHTML = `<div class="empty-state"><div class="big">❌</div><div>${Utils.escapeHtml(msg.msg)}</div></div>`;
+    }
   }
 
   function update(data) {

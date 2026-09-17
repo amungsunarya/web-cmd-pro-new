@@ -5,7 +5,26 @@ const OIDS = {
   ifDescr: '1.3.6.1.2.1.2.2.1.2',
   ifInOctets: '1.3.6.1.2.1.2.2.1.10',
   ifOutOctets: '1.3.6.1.2.1.2.2.1.16',
+  ifHCInOctets: '1.3.6.1.2.1.31.1.1.1.6',
+  ifHCOutOctets: '1.3.6.1.2.1.31.1.1.1.10',
 };
+
+function counterValue(value) {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'bigint') return Number(value);
+  if (Buffer.isBuffer(value)) return Number(BigInt('0x' + value.toString('hex')));
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function walkCounter(session, highCapacityOid, legacyOid) {
+  try {
+    const rows = await walk(session, highCapacityOid);
+    return rows.length ? rows : walk(session, legacyOid);
+  } catch {
+    return walk(session, legacyOid);
+  }
+}
 
 function walk(session, oid) {
   return new Promise((resolve, reject) => {
@@ -31,8 +50,8 @@ module.exports = function trafficHandler(ws) {
   async function readStats() {
     const [descr, input, output] = await Promise.all([
       walk(session, OIDS.ifDescr),
-      walk(session, OIDS.ifInOctets),
-      walk(session, OIDS.ifOutOctets),
+      walkCounter(session, OIDS.ifHCInOctets, OIDS.ifInOctets),
+      walkCounter(session, OIDS.ifHCOutOctets, OIDS.ifOutOctets),
     ]);
     const stats = {};
     const indexOf = (oid, base) => oid.slice(base.length + 1);
@@ -42,11 +61,11 @@ module.exports = function trafficHandler(ws) {
     };
     for (const row of input) {
       const item = stats[indexOf(row.oid, OIDS.ifInOctets)];
-      if (item) item.rx_total = Number(row.value);
+      if (item) item.rx_total = counterValue(row.value);
     }
     for (const row of output) {
       const item = stats[indexOf(row.oid, OIDS.ifOutOctets)];
-      if (item) item.tx_total = Number(row.value);
+      if (item) item.tx_total = counterValue(row.value);
     }
     return stats;
   }
