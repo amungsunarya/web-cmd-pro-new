@@ -5,6 +5,7 @@ window.Ping = (() => {
   const queue = [];
 
   function initWs() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     ws = new WebSocket(API.wsUrl('/ws/ping'));
     ws.onopen = () => {
       wsReady = true;
@@ -115,7 +116,8 @@ window.Ping = (() => {
         saveDevice(d);
       }
     };
-    card.querySelector('[data-action="remove"]').onclick = () => removeDevice(d.host);
+    const removeButton = card.querySelector('[data-action="remove"]');
+    if (removeButton) removeButton.onclick = () => removeDevice(d.host);
     d.card = card;
     updateCard(d);
   }

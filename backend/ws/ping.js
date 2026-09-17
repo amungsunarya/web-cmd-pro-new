@@ -26,10 +26,10 @@ module.exports = function pingHandler(ws) {
         buffer = lines.pop();
         for (const line of lines) {
           if (!line.trim()) continue;
-          const tMatch = line.match(/(?:time|waktu)[=<]([\d.]+)\s*ms/i);
+          const tMatch = line.match(/(?:time|waktu)[=<]\s*([\d.,]+)\s*ms/i);
           const time = tMatch ? parseFloat(tMatch[1]) : null;
-          const alive = /TTL=|ttl=/i.test(line);
-          const fail = /timed out|unreachable|hilang/i.test(line);
+          const alive = /TTL[=<>]|ttl[=<>]|bytes from|bytes=|reply from|balasan dari/i.test(line);
+          const fail = /timed out|unreachable|hilang|request timeout|destination host unreachable/i.test(line);
           if (alive || fail || tMatch) {
             send({ type: 'ping', host, alive, time, raw: line.trim() });
           }
