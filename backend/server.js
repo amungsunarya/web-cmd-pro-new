@@ -13,6 +13,7 @@ const cmdRoutes       = require('./routes/cmd');
 const bandwidthRoutes = require('./routes/bandwidth');   // ← BARU
 const trafficRoutes   = require('./routes/traffic');     // ← BARU
 const snmpRoutes      = require('./routes/snmp');        // ← BARU
+const pingRoutes      = require('./routes/ping');
 const pingWs          = require('./ws/ping');
 const sshWs           = require('./ws/ssh');
 const telnetWs        = require('./ws/telnet');
@@ -37,6 +38,7 @@ app.use('/api', authMiddleware, cmdRoutes);
 app.use('/api', authMiddleware, bandwidthRoutes);
 app.use('/api', authMiddleware, trafficRoutes);
 app.use('/api', authMiddleware, snmpRoutes);
+app.use('/api', authMiddleware, pingRoutes);
 
 // =========================================
 // STATIC (FRONTEND)

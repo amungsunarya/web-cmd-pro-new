@@ -24,17 +24,35 @@ window.Ping = (() => {
     else queue.push(s);
   }
 
-  function loadDevices() {
+  async function loadDevices() {
     try {
-      JSON.parse(localStorage.getItem('pingDevices') || '[]')
-        .forEach(d => addDevice(d.host, d.name, false));
-    } catch {}
+      const res = await fetch('/api/ping/devices');
+      const data = await res.json();
+      (data.devices || []).forEach(d => addDevice(d.host, d.name, false));
+
+      const legacy = JSON.parse(localStorage.getItem('pingDevices') || '[]');
+      for (const device of legacy) {
+        if (devices.has(device.host)) continue;
+        addDevice(device.host, device.name, false);
+        await saveDevice(devices.get(device.host));
+      }
+      if (legacy.length) localStorage.removeItem('pingDevices');
+    } catch (e) {
+      console.error('Gagal memuat perangkat ping:', e);
+    }
   }
 
-  function saveDevices() {
-    localStorage.setItem('pingDevices', JSON.stringify(
-      [...devices.values()].map(d => ({ host: d.host, name: d.name }))
-    ));
+  async function saveDevice(device) {
+    try {
+      const res = await fetch('/api/ping/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host: device.host, name: device.name }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan perangkat');
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
   function addDevice(host, name, save = true) {
@@ -48,7 +66,7 @@ window.Ping = (() => {
     devices.set(host, d);
     renderDevice(d);
     wsSend({ type: 'start', host });
-    if (save) saveDevices();
+    if (save) saveDevice(d);
     updateEmpty();
   }
 
@@ -57,7 +75,8 @@ window.Ping = (() => {
     wsSend({ type: 'stop', host });
     d.card?.remove();
     devices.delete(host);
-    saveDevices();
+    fetch(`/api/ping/devices/${encodeURIComponent(host)}`, { method: 'DELETE' })
+      .catch(e => console.error('Gagal menghapus perangkat ping:', e));
     updateEmpty();
   }
 
@@ -93,7 +112,7 @@ window.Ping = (() => {
       if (nn !== null) {
         d.name = nn.trim() || d.host;
         card.querySelector('.device-name').textContent = d.name;
-        saveDevices();
+        saveDevice(d);
       }
     };
     card.querySelector('[data-action="remove"]').onclick = () => removeDevice(d.host);
@@ -170,9 +189,9 @@ window.Ping = (() => {
   }
 
   return {
-    init() {
+    async init() {
       initWs();
-      loadDevices();
+      await loadDevices();
       bindUI();
       setTimeout(updateEmpty, 100);
     }

@@ -237,13 +237,22 @@ module.exports = function snmpHandler(ws) {
     targets = [];
   }
 
+  function schedulePolling() {
+    if (timer) clearInterval(timer);
+    if (!targets.length) return;
+    const pollAll = () => Promise.all(
+      targets.map((target) => pollTarget(target, sessions.get(target.key)))
+    );
+    pollAll();
+    timer = setInterval(pollAll, Math.min(...targets.map((target) => target.interval)));
+  }
+
   ws.on('message', (msg) => {
     let data; try { data = JSON.parse(msg); } catch { return; }
 
     if (data.type === 'start') {
-      stopAll();
       const requestedTargets = Array.isArray(data.targets) ? data.targets : [data];
-      targets = requestedTargets.slice(0, 20).filter((target) =>
+      const normalizedTargets = requestedTargets.slice(0, 20).filter((target) =>
         target?.host && /^[a-zA-Z0-9._\-]+$/.test(target.host)
       ).map((target, index) => ({
         ...target,
@@ -256,9 +265,15 @@ module.exports = function snmpHandler(ws) {
         name: target.name || target.host,
       }));
 
-      if (!targets.length) return send({ type: 'error', msg: 'Tidak ada host SNMP yang valid' });
+      if (!normalizedTargets.length) return send({ type: 'error', msg: 'Tidak ada host SNMP yang valid' });
 
-      for (const target of targets) {
+      for (const target of normalizedTargets) {
+        const previous = targets.find(item => item.key === target.key);
+        if (previous) {
+          try { sessions.get(previous.key)?.close(); } catch {}
+          sessions.delete(previous.key);
+          targets = targets.filter(item => item.key !== previous.key);
+        }
         const session = snmp.createSession(target.host, target.community, {
           port: target.port,
           version: target.version === '1' ? snmp.Version1 : snmp.Version2c,
@@ -270,13 +285,11 @@ module.exports = function snmpHandler(ws) {
           type: 'error', target: { id: target.id, name: target.name, host: target.host },
           msg: 'SNMP session error: ' + e.message,
         }));
+        targets.push(target);
       }
 
-      send({ type: 'info', msg: `Mulai monitoring ${targets.length} perangkat SNMP` });
-      const pollAll = () => Promise.all(targets.map((target) => pollTarget(target, sessions.get(target.key))));
-      pollAll();
-      const interval = Math.min(...targets.map((target) => target.interval));
-      timer = setInterval(pollAll, interval);
+      send({ type: 'info', msg: `Monitoring ${targets.length} perangkat SNMP` });
+      schedulePolling();
     }
     else if (data.type === 'stop') {
       stopAll();

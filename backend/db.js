@@ -58,9 +58,21 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
+  CREATE TABLE IF NOT EXISTS ping_devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    host TEXT NOT NULL,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    UNIQUE(user_id, host),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
   CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
   CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
   CREATE INDEX IF NOT EXISTS idx_snmp_profiles_user ON snmp_profiles(user_id);
+  CREATE INDEX IF NOT EXISTS idx_ping_devices_user ON ping_devices(user_id);
 `);
 
 const BCRYPT_ROUNDS = 10;
@@ -174,6 +186,28 @@ const deleteSnmpProfile = (userId, profileId) => db.prepare(
 ).run(profileId, userId);
 
 // =========================================
+// PING DEVICES
+// =========================================
+const listPingDevices = (userId) => db.prepare(
+  'SELECT id, host, name FROM ping_devices WHERE user_id = ? ORDER BY name COLLATE NOCASE'
+).all(userId);
+
+function savePingDevice({ userId, host, name }) {
+  const info = db.prepare(`
+    INSERT INTO ping_devices (user_id, host, name, updated_at)
+    VALUES (?, ?, ?, strftime('%s','now'))
+    ON CONFLICT(user_id, host) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at
+  `).run(userId, host, name);
+  return db.prepare(
+    'SELECT id, host, name FROM ping_devices WHERE user_id = ? AND host = ?'
+  ).get(userId, host);
+}
+
+const deletePingDevice = (userId, host) => db.prepare(
+  'DELETE FROM ping_devices WHERE user_id = ? AND host = ?'
+).run(userId, host);
+
+// =========================================
 // CLI
 // =========================================
 function resetAdminPassword(newPass) {
@@ -193,4 +227,5 @@ module.exports = {
   createSession, getSession, deleteSession, cleanExpiredSessions,
   logAction, listAudit, resetAdminPassword,
   listSnmpProfiles, createSnmpProfile, deleteSnmpProfile,
+  listPingDevices, savePingDevice, deletePingDevice,
 };

@@ -29,6 +29,7 @@ window.SNMP = (() => {
         option.dataset.profile = JSON.stringify(profile);
         select.appendChild(option);
       }
+      if (profiles.length) startTargets(profiles);
     } catch (e) {
       console.error('Gagal memuat profil SNMP:', e);
     }
@@ -96,6 +97,7 @@ window.SNMP = (() => {
   }
 
   function initWs() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     ws = new WebSocket(API.wsUrl('/ws/snmp'));
     ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
     ws.onclose = () => { if (running) setTimeout(initWs, 2000); };
@@ -267,7 +269,6 @@ window.SNMP = (() => {
     $('snmpStartBtn').disabled = true;
     $('snmpAllBtn').disabled = true;
     $('snmpStopBtn').disabled = false;
-    deviceViews.clear();
     targets.forEach((target, index) => deviceViews.set(String(target.id || index), {
       title: target.name || target.host, host: target.host, status: 'wait', detailOpen: false,
       html: '<div class="empty-state"><div class="big">⏳</div><div>Menunggu hasil polling...</div></div>',
