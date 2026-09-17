@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const auth = require('../config/auth');
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.post('/ping/devices', (req, res) => {
   }
 });
 
-router.delete('/ping/devices/:host', (req, res) => {
+router.delete('/ping/devices/:host', auth.adminOnly, (req, res) => {
   const result = db.deletePingDevice(req.user.id, req.params.host);
   if (!result.changes) return res.status(404).json({ error: 'Perangkat tidak ditemukan' });
   res.json({ ok: true });

@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
   AUTH.attachHandlers();
   AUTH.startAutoLogout();
 
+  document.querySelectorAll('[data-admin-only]').forEach((element) => {
+    if (AUTH.role !== 'admin') element.remove();
+  });
+
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -22,4 +26,5 @@ document.addEventListener('DOMContentLoaded', () => {
   Bandwidth.init();
   Traffic.init();
   SNMP.init();
+  if (AUTH.role === 'admin') Users.init();
 });

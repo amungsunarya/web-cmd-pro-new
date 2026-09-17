@@ -1,6 +1,7 @@
 const express = require('express');
 const snmp = require('net-snmp');
 const db = require('../db');
+const auth = require('../config/auth');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.post('/snmp/profiles', (req, res) => {
   }
 });
 
-router.delete('/snmp/profiles/:id', (req, res) => {
+router.delete('/snmp/profiles/:id', auth.adminOnly, (req, res) => {
   const result = db.deleteSnmpProfile(req.user.id, parseInt(req.params.id));
   if (!result.changes) return res.status(404).json({ error: 'Profil tidak ditemukan' });
   res.json({ ok: true });

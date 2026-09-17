@@ -42,7 +42,7 @@ window.SNMP = (() => {
     $('snmpPort').value = profile.port || 161;
     $('snmpVersion').value = profile.version || '2c';
     $('snmpInterval').value = profile.interval || 5000;
-    $('snmpDeleteBtn').disabled = !profile.id;
+    $('snmpDeleteBtn').disabled = !profile.id || AUTH.role !== 'admin';
   }
 
   async function saveProfile() {

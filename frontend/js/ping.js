@@ -103,7 +103,7 @@ window.Ping = (() => {
       </div>
       <div class="device-actions">
         <button class="btn btn-gray btn-sm" data-action="rename">✎ Rename</button>
-        <button class="btn btn-danger btn-sm" data-action="remove">✕ Hapus</button>
+        ${AUTH.role === 'admin' ? '<button class="btn btn-danger btn-sm" data-action="remove">✕ Hapus</button>' : ''}
       </div>`;
     $('deviceGrid').appendChild(card);
 

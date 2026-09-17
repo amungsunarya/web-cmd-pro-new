@@ -59,6 +59,23 @@ header h1 { font-size:1.1rem; color:var(--accent); }
 .view::-webkit-scrollbar { width:8px; }
 .view::-webkit-scrollbar-thumb { background:#334155; border-radius:4px; }
 
+/* ===== User Management ===== */
+.users-layout { display:grid; grid-template-columns:300px 1fr; gap:12px; }
+.user-form-panel, .user-list-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:16px;
+}
+.user-form-panel h2, .user-list-panel h2 { margin:0 0 14px; font-size:1rem; }
+.user-form-panel label { display:block; margin:12px 0 5px; color:var(--muted); font-size:0.72rem; text-transform:uppercase; }
+.user-form-panel input, .user-form-panel select { width:100%; }
+.user-form-panel .btn { width:100%; margin-top:16px; }
+.section-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.user-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid var(--border); }
+.user-meta { color:var(--muted); font-size:0.72rem; margin-top:4px; }
+.user-row-actions { display:flex; align-items:center; gap:8px; }
+.user-current { color:var(--muted); font-size:0.72rem; }
+@media (max-width:760px) { .users-layout { grid-template-columns:1fr; } }
+
 /* ===== Ping Monitor ===== */
 .ping-toolbar {
   display:flex; gap:8px; margin-bottom:14px; background:var(--panel);
