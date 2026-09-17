@@ -203,12 +203,16 @@
   <!-- ============ TRAFFIC ============ -->
   <div class="view" id="view-traffic">
     <div class="net-bar">
-      <select id="trafficIface" class="grow">
-        <option value="">— pilih interface —</option>
+      <input class="grow" type="text" id="trafficHost" placeholder="IP perangkat, contoh 192.168.1.1">
+      <input class="port" type="text" id="trafficCommunity" value="public" placeholder="Community">
+      <input class="port" type="number" id="trafficPort" value="161">
+      <select id="trafficVersion" class="btn btn-gray">
+        <option value="2c" selected>v2c</option>
+        <option value="1">v1</option>
       </select>
       <select id="trafficInterval" class="btn btn-gray">
-        <option value="500">0.5 detik</option>
         <option value="1000" selected>1 detik</option>
+        <option value="5000">5 detik</option>
       </select>
       <button class="btn btn-primary" id="trafficStartBtn">▶ Mulai</button>
       <button class="btn btn-danger" id="trafficStopBtn" disabled>■ Stop</button>

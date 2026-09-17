@@ -1,8 +1,6 @@
 window.Traffic = (() => {
   const $ = Utils.$;
   let ws = null, running = false;
-  const ifaceMap = new Map();   // name -> { rx, tx, el }
-
   function fmtBytes(bps) {
     if (bps < 1024) return bps + ' B/s';
     if (bps < 1024 * 1024) return (bps / 1024).toFixed(1) + ' KB/s';
@@ -10,24 +8,8 @@ window.Traffic = (() => {
     return (bps / 1024 / 1024 / 1024).toFixed(2) + ' GB/s';
   }
 
-  async function loadIfaces() {
-    try {
-      const r = await fetch('/api/traffic/ifaces');
-      const d = await r.json();
-      const sel = $('trafficIface');
-      sel.innerHTML = '<option value="">— semua interface —</option>';
-      d.ifaces.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-      });
-    } catch (e) {
-      console.error('Gagal load interface:', e);
-    }
-  }
-
   function initWs() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     ws = new WebSocket(API.wsUrl('/ws/traffic'));
     ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
     ws.onclose = () => {
@@ -81,6 +63,8 @@ window.Traffic = (() => {
   }
 
   function start() {
+    const host = $('trafficHost').value.trim();
+    if (!host) { alert('Masukkan IP perangkat'); return; }
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       initWs();
       setTimeout(() => start(), 500);
@@ -91,7 +75,10 @@ window.Traffic = (() => {
     $('trafficStopBtn').disabled = false;
     ws.send(JSON.stringify({
       type: 'start',
-      iface: $('trafficIface').value || null,
+      host,
+      community: $('trafficCommunity').value.trim() || 'public',
+      port: parseInt($('trafficPort').value) || 161,
+      version: $('trafficVersion').value,
       interval: parseInt($('trafficInterval').value),
     }));
   }
@@ -123,7 +110,6 @@ window.Traffic = (() => {
   return {
     init() {
       initWs();
-      loadIfaces();
       bindUI();
     }
   };

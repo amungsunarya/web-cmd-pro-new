@@ -3,6 +3,7 @@ window.Bandwidth = (() => {
   let ws = null, wsReady = false;
 
   function initWs() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     ws = new WebSocket(API.wsUrl('/ws/bandwidth'));
     ws.onopen = () => { wsReady = true; };
     ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
@@ -64,6 +65,10 @@ window.Bandwidth = (() => {
   function start() {
     const host = $('bwHost').value.trim();
     if (!host) { alert('Masukkan IP iperf3 server'); return; }
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      alert('Koneksi bandwidth belum siap. Tunggu sebentar lalu coba lagi.');
+      return;
+    }
     $('bwBody').innerHTML = '';
     $('bwStartBtn').disabled = true;
     $('bwStopBtn').disabled = false;
